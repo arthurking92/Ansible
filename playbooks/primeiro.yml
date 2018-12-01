@@ -1,0 +1,20 @@
+---
+- name: Playbook Ansible
+  hosts: dexter
+  vars:
+    - pacotes: 
+       - vim
+       - htop
+  tasks:
+    - name: Instala pacotes para RedHat
+      yum: 
+        name: '{{pacotes}}' 
+        state: present
+      when: ansible_os_family == 'RedHat'
+
+    - name: Instala o vim para Debian
+      apt:
+        name: '{{pacotes}}'
+        state: present
+      when: ansible_os_family == 'Debian' 
+

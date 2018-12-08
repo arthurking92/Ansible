@@ -1,0 +1,56 @@
+---
+# tasks file for bluegreen
+- name: Registrar o ip do container blue
+  shell: "docker exec blue hostname -I"
+  register: ipblue
+
+- name: Registrar o IP do container Green
+  shell: "docker exec green hostname -I"
+  register: ipgreen
+
+- name: Verifica o site em producao
+  stat:
+    path: /etc/nginx/conf.d/blue.conf
+  register: blueprod
+
+- block: 
+  - name: Remove o arquivo blue
+    file:
+      path: /etc/nginx/conf.d/blue.conf
+      state: absent
+
+  - name: Transfere o site para o container green
+    copy: 
+      src: /var/lib/jenkins/workspace/bluegreen/
+      dest: /green/
+
+  - name: Copia o arquivo do green
+    template:
+      src: green.conf
+      dest: /etc/nginx/conf.d/green.conf
+    notify:
+      - Reinicia o nginx
+  
+  when: blueprod.stat.exists == True
+
+- block:
+
+  - name: Remove o arquivo green
+    file:
+      path: /etc/nginx/conf.d/green.conf
+      state: absent
+
+  - name: Transfere o site para o container blue
+    copy:
+      src: /var/lib/jenkins/workspace/bluegreen/
+      dest: /blue/
+
+  - name: Copia o arquivo do blue
+    template:
+      src: blue.conf
+      dest: /etc/nginx/conf.d/blue.conf
+    notify:
+      - Reinicia o nginx
+
+  when: blueprod.stat.exists == False
+
